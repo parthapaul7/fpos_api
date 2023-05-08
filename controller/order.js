@@ -30,34 +30,51 @@ exports.postOrder = async(req, res, next) => {
     try {
 
         // fetching and calculating quantity
-        const product = await ProductDetail.findById(req.body.product_id); 
-        const product_quantity = product.current_quantity;
-        const current_quantity = Number(product.current_quantity) - Number(req.body.product_quantity);
-        
-        if(current_quantity <= 0){
-            return res.status(500).json({
-                status: "error",
-                message: "insufficient quantity",
-            });
+        // wait till all the products are updated
+
+        const product_details = req.body.product_details;
+
+        for(let i=0;i<product_details.length;i++){
+            const product = await ProductDetail.findById(product_details[i].product_id); 
+            const current_quantity = Number(product.current_quantity) - Number(product_details[i].quantity);
+
+            if(current_quantity < 0){
+                return res.status(500).json({
+                    status: "error",
+                    message: "insufficient quantity",
+                });
+            }
+            // updating details of product
+            const productUpdate = await ProductDetail.updateOne({_id : product_details[i].product_id},{
+                current_quantity : current_quantity.toString()
+            })
+    
+            if(!productUpdate.acknowledged) {
+                return res.status(500).json({
+                    status: "error",
+                    message: "some error occurred",
+                });
+            }
         }
+        // const previous_quantity = product.current_quantity;
+        
+        
+        // do this only if the above is successful
 
         // updating details
-        const productUpdate = await ProductDetail.updateOne({_id : req.body.product_id},{
-            current_quantity : current_quantity.toString()
-        })
         const orders = await Order.create(req.body);
 
         const userUpdate = await Buyer.updateOne({_id : buyer_id},{
             $push: {orders : orders._id}
         })
-        const fopUpdate = await Fpo.updateOne({_id : product.fpo_id},{
+        const fopUpdate = await Fpo.updateOne({_id : req.body.Fpo_id},{
             $push: {orders : orders._id}
         })
 
-        if( !userUpdate.acknowledged || !fopUpdate.acknowledged || !productUpdate.acknowledged){
-            const productUpdate = await ProductDetail.updateOne({_id : req.body.product_id},{
-                current_quantity : previous_quantity 
-            })
+        if( !userUpdate.acknowledged || !fopUpdate.acknowledged ){
+            // const productUpdate = await ProductDetail.updateOne({_id : req.body.product_id},{
+            //     current_quantity : previous_quantity 
+            // })
             return res.status(500).json({
                 status: "error",
                 message: "some error occurred",
@@ -69,9 +86,7 @@ exports.postOrder = async(req, res, next) => {
         });
 
     } catch (error) {
-        const productUpdate = await ProductDetail.updateOne({_id : req.body.product_id},{
-                current_quantity : previous_quantity 
-        })
+        console.log(error);
         return res.status(500).json({
             status: "error",
             message: "some error occurred",
@@ -111,32 +126,45 @@ exports.deleteOrder = async(req, res, next) => {
     try {
 
         // fetching details and calculating current quantity 
-        const product = await ProductDetail.findById(req.body.product_id);
         const order_details = await Order.findById(req.params.id);
 
-        console.log(product, order_details);
-        const current_quantity = Number(product.current_quantity) + Number(order_details.product_quantity);
+        const product_details = order_details.product_details;
+        for(let i=0;i<product_details.length;i++){
+        const product = await ProductDetail.findById(product_details[i].product_id);
+        
 
-        if(!current_quantity){
-            return res.status(500).json({
-                status: "error",
-                message: "some error occurred",
-            });
+        const current_quantity = Number(product.current_quantity) + Number(product_details[i].quantity);
+
+        console.log(current_quantity);
+            if(current_quantity < 0){
+                return res.status(500).json({
+                    status: "error",
+                    message: "some error occurred",
+                });
+
+            }
+            const productUpdate = await ProductDetail.updateOne({_id : product_details[i].product_id},{
+                current_quantity : current_quantity.toString()
+            })
+
+            if(!productUpdate.acknowledged) {
+                return res.status(500).json({
+                    status: "error",
+                    message: "some error occurred",
+                });
+            }
         }
         // updating details 
         const orders = await Order.deleteOne({_id : req.params.id});
-        const productUpdate = await ProductDetail.updateOne({_id : req.body.product_id},{
-            current_quantity : current_quantity.toString()
-        })
 
         const userUpdate = await Buyer.updateOne({_id : order_details.buyer_id},{
             $pull: {orders : req.params.id}
         })
-        const fopUpdate = await Fpo.updateOne({_id : product.fpo_id},{
+        const fopUpdate = await Fpo.updateOne({_id : order_details.Fpo_id},{
             $pull: {orders : req.params.id}
         })
         
-        if( !userUpdate.acknowledged || !fopUpdate.acknowledged || !productUpdate.acknowledged ){
+        if( !userUpdate.acknowledged || !fopUpdate.acknowledged){
             return res.status(500).json({
                 status: "error",
                 message: "some error occurred",
