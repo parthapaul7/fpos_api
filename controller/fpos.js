@@ -1,7 +1,7 @@
 const Fpos = require('../models/fpos');
 
 exports.getShop = async(req, res, next) => {
-    const shops = await Fpos.find();
+    const shops = await Fpos.find({...req.query});
 
     return res.status(200).json({
         status: "success",
@@ -30,7 +30,7 @@ exports.postShop = async(req, res, next) => {
 
 exports.getShopWithId = async(req, res, next) => {
     try {
-        const shop = await Fpos.findById(req.params.id).populate('products');
+        const shop = await Fpos.findById(req.params.id).populate('orders').populate('products');
 
         // console.log(shop);
         if (!shop) {

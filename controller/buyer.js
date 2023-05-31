@@ -2,7 +2,7 @@ const User = require('../models/buyers');
 
 exports.getUser = async(req, res, next) => {
     try {
-        const users = await User.find();
+        const users = await User.find({...req.query});
         
         return res.status(200).json({
             status: "success",
