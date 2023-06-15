@@ -3,7 +3,7 @@ const Fpo = require('../models/fpos');
 
 exports.getProduct = async(req, res, next) => {
     try {
-        const products = await ProductDetails.find();
+        const products = await ProductDetails.find({...req.query});
         return res.status(200).json({
             status: "success",
             data: products
