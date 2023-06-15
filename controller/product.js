@@ -61,20 +61,18 @@ exports.postProduct = async(req, res, next) => {
 }
 
 exports.updateProduct = async(req, res, next) => {
-    let { category_ } = req.body;
-    category_ = category_.tolowercase();
 
-    let { shop_id } = req.body;
+    let { fpo_id } = req.body;
 
-    if(shop_id) {
+    if(fpo_id) {
         return res.status(500).json({
             status: "error",
-            message: "shop_id cannot be updated",
+            message: "fpo_id cannot be updated , remove fpo_id from body or create new item with fpo_id",
     }); 
     }
 
     try {
-        const product = await productDetails.updateOne({ _id: req.params.id},{...req.body,category_ });
+        const product = await ProductDetails.updateOne({ _id: req.params.id},{...req.body});
 
         return res.status(200).json({
             status: "success",
