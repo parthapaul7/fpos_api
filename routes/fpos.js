@@ -14,6 +14,8 @@ router.post("/fpo",  shopController.postShop);
 
 router.get("/fpo/:id",  shopController.getShopWithId);
 
+router.post("/fpo/:id",  shopController.updateShop);
+
 // router.get("/doctor", check, isDoctor, homeController.getDoctor);
 
 //route with no check 
